@@ -12,23 +12,27 @@ public class AxleInfo {
 
 public class CarController : MonoBehaviour {
 
+	public float speed = 0.0f;						// Car's current speed
+
 	[SerializeField] List<AxleInfo> axleInfos;		// Holds all the axles for our car
 	[SerializeField] float maxMotorTorque = 400f;	// How much torque can the motor apply
 	[SerializeField] float maxSteeringAngle = 30f;	// How quickly the car will turn
 	[SerializeField] float antiRoll = 35000f;		// Reduces amount of body roll should be equal to the spring force
-	[SerializeField] float jumpForce = 100000f;		// How hard do we want to jump our car
-	
+	[SerializeField] float jumpForce = 350000f;		// How hard do we want to jump our car
+	[SerializeField] float boostForce = 20000f;		// How much force we need to boost into air
 	[SerializeField] Transform centerOfMass;		// Use to readjust the center of mass of the car
 	
 	private Rigidbody rb;							// Our car's rigidbody
-	private bool jumping;							// Is the car currently jumping
-	private float speed = 0.0f;
-	Vector3 lastPosition = Vector3.zero;
-	
+	private bool grounded;							// Is the car currently jumping
+		
 	public void Start()
 	{
 		rb = GetComponent<Rigidbody>();
 		rb.centerOfMass = centerOfMass.position;
+	}
+	
+	void OnGUI() {
+		GUI.Label(new Rect(10, 10, 100, 20), speed.ToString());
 	}
 	
 	// finds the corresponding visual wheel
@@ -52,10 +56,6 @@ public class CarController : MonoBehaviour {
 		// Assign position to our wheel mesh
 		visualWheel.transform.position = position;
 		visualWheel.transform.rotation = rotation;
-	}
-	
-	void OnGUI() {
-		GUI.Label(new Rect(10, 10, 100, 20), speed.ToString());
 	}
 	
 	private void ApplyRollStabilizer(AxleInfo axleInfo)
@@ -108,43 +108,90 @@ public class CarController : MonoBehaviour {
 		
 	}
 	
-	public void FixedUpdate()
+	Vector3 lastPosition = Vector3.zero;
+	private void CalculateSpeed()
 	{
-		// Get player input
-		float motor = maxMotorTorque * Input.GetAxis("Vertical");
-		float steering = maxSteeringAngle * Input.GetAxis("Horizontal");
-		
+		speed = (((transform.position - lastPosition).magnitude) / Time.deltaTime) ;
+		lastPosition = transform.position;	
+	}
+	
+	private void Drive (float vertical, float horizontal)
+	{
 		foreach (AxleInfo axleInfo in axleInfos) {
 		
 			// Steering
 			if (axleInfo.steering) {
-				axleInfo.leftWheel.steerAngle = steering;
-				axleInfo.rightWheel.steerAngle = steering;
+				axleInfo.leftWheel.steerAngle = horizontal;
+				axleInfo.rightWheel.steerAngle = horizontal;
 			}
 			
 			// Acceleration
 			if (axleInfo.motor) {
-				axleInfo.leftWheel.motorTorque = motor;
-				axleInfo.rightWheel.motorTorque = motor;
+				axleInfo.leftWheel.motorTorque = vertical;
+				axleInfo.rightWheel.motorTorque = vertical;
 			}
 			
+			// Stabilize the body roll of the car
 			ApplyRollStabilizer(axleInfo);
 			
 			// Make visual wheels rotate the same as their colliders
 			ApplyLocalPositionToVisuals(axleInfo.leftWheel);
 			ApplyLocalPositionToVisuals(axleInfo.rightWheel);
 			
-			if (axleInfo.leftWheel.isGrounded)
-				jumping = false;
+			if (axleInfo.leftWheel.isGrounded || axleInfo.rightWheel.isGrounded)
+				grounded = true;
+			else
+				grounded = false;
+				
+			
+			
 		}
-		
-		if(Input.GetKey("space") && jumping == false)
+	}
+	
+	private void AerialMovement (bool jumpButton, float vertical, float horizontal)
+	{
+		// Handles space press
+		if(jumpButton)
+		{			
+			if (grounded)
+			{
+				// Add our jump force
+				rb.AddForce(Vector3.up * jumpForce);
+			}
+		}
+	
+		if (!grounded)
 		{
-			rb.AddForce(Vector3.up * jumpForce);
-			jumping = true;
+			rb.AddTorque(transform.right * vertical * Time.deltaTime * 500);
+			rb.AddTorque(transform.up * horizontal * Time.deltaTime * 5000);
 		}
+	}
+	
+	private void Boost (bool boostButton)
+	{
+		if (boostButton)
+		{
+			rb.AddForce(transform.forward * boostForce);
+		}
+	}
+	
+	private void AddDownForce()
+	{
+		rb.AddForce(Vector3.down * speed);
+	}
+	
+	public void FixedUpdate()
+	{
+		// Get player input
+		float vertical = maxMotorTorque * Input.GetAxis("Vertical");
+		float horizontal = maxSteeringAngle * Input.GetAxis("Horizontal");
+		bool jumpButton = Input.GetButton("Jump");
+		bool boostButton = Input.GetButton("Fire1");
 		
-		speed = (((transform.position - lastPosition).magnitude) / Time.deltaTime) ;
-		lastPosition = transform.position;
+	
+		Drive(vertical,horizontal);
+		CalculateSpeed();
+		AerialMovement(jumpButton, vertical, horizontal);
+		Boost(boostButton);
 	}
 }
