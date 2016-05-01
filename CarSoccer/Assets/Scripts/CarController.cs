@@ -28,7 +28,7 @@ public class CarController : MonoBehaviour {
 	public void Start()
 	{
 		rb = GetComponent<Rigidbody>();
-		rb.centerOfMass = centerOfMass.position;
+		rb.centerOfMass = centerOfMass.localPosition;
 	}
 	
 	void OnGUI() {
@@ -193,5 +193,6 @@ public class CarController : MonoBehaviour {
 		CalculateSpeed();
 		AerialMovement(jumpButton, vertical, horizontal);
 		Boost(boostButton);
+		AddDownForce();
 	}
 }
