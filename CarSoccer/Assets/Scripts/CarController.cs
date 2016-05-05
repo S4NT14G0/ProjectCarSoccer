@@ -24,6 +24,7 @@ public class CarController : MonoBehaviour {
 	
 	private Rigidbody rb;							// Our car's rigidbody
 	private bool grounded;							// Is the car currently jumping
+	private bool flipped;
 		
 	public void Start()
 	{
@@ -108,11 +109,9 @@ public class CarController : MonoBehaviour {
 		
 	}
 	
-	Vector3 lastPosition = Vector3.zero;
 	private void CalculateSpeed()
 	{
-		speed = (((transform.position - lastPosition).magnitude) / Time.deltaTime) ;
-		lastPosition = transform.position;	
+		speed = rb.velocity.magnitude;
 	}
 	
 	private void Drive (float vertical, float horizontal)
@@ -143,8 +142,6 @@ public class CarController : MonoBehaviour {
 			else
 				grounded = false;
 				
-			
-			
 		}
 	}
 	
@@ -156,7 +153,7 @@ public class CarController : MonoBehaviour {
 			if (grounded)
 			{
 				// Add our jump force
-				rb.AddForce(Vector3.up * jumpForce);
+				rb.AddForce(transform.up * jumpForce);
 			}
 		}
 	
@@ -177,7 +174,15 @@ public class CarController : MonoBehaviour {
 	
 	private void AddDownForce()
 	{
-		rb.AddForce(Vector3.down * speed);
+		rb.AddForce(-transform.up * speed);
+	}
+	
+	void OnCollisionEnter(Collision collision) {
+		if (collision.gameObject.CompareTag("Stadium") && Vector3.Dot(transform.up, Vector3.down) > 0)
+		{
+			flipped = true;
+			Debug.Log("UpsideDown");
+		}
 	}
 	
 	public void FixedUpdate()
