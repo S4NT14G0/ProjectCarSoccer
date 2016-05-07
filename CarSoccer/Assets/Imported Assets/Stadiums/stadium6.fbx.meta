@@ -8,15 +8,23 @@ ModelImporter:
     100000: Circle
     100002: //RootNode
     100004: tireFrontR
+    100006: Plane
     400000: Circle
     400002: //RootNode
     400004: tireFrontR
+    400006: Plane
     2300000: Circle
     2300002: tireFrontR
+    2300004: Plane
+    2300006: //RootNode
     3300000: Circle
     3300002: tireFrontR
+    3300004: Plane
+    3300006: //RootNode
     4300000: tireFrontR
     4300002: Circle
+    4300004: Plane
+    4300006: Stadium
   materials:
     importMaterials: 1
     materialName: 0
