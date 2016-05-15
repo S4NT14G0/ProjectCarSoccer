@@ -21,7 +21,9 @@ public class CarController : MonoBehaviour {
 	[SerializeField] float jumpForce = 350000f;		// How hard do we want to jump our car
 	[SerializeField] float boostForce = 20000f;		// How much force we need to boost into air
 	[SerializeField] Transform centerOfMass;		// Use to readjust the center of mass of the car
-	
+	[SerializeField] float spinForce = 5000f;
+	[SerializeField] float flipForce = 1000f;
+
 	private Rigidbody rb;							// Our car's rigidbody
 	private bool grounded;							// Is the car currently jumping
 	private bool flipped;
@@ -138,9 +140,14 @@ public class CarController : MonoBehaviour {
 			ApplyLocalPositionToVisuals(axleInfo.rightWheel);
 			
 			if (axleInfo.leftWheel.isGrounded || axleInfo.rightWheel.isGrounded)
+			{
 				grounded = true;
+				flipped = false;
+			}
 			else
+			{
 				grounded = false;
+			}
 				
 		}
 	}
@@ -157,10 +164,17 @@ public class CarController : MonoBehaviour {
 			}
 		}
 	
-		if (!grounded)
+		if (!grounded && !flipped)
 		{
-			rb.AddTorque(transform.right * vertical * Time.deltaTime * 500);
-			rb.AddTorque(transform.up * horizontal * Time.deltaTime * 5000);
+			// Flip the car over period of time
+			rb.AddTorque(transform.right * vertical * Time.deltaTime * flipForce);
+			// Spin the car over period of time
+			rb.AddTorque(transform.up * horizontal * Time.deltaTime * spinForce);
+		}
+
+		if (flipped) 
+		{
+			rb.AddTorque(transform.forward * vertical * spinForce);
 		}
 	}
 	
@@ -178,13 +192,16 @@ public class CarController : MonoBehaviour {
 	}
 	
 	void OnCollisionEnter(Collision collision) {
-		if (collision.gameObject.CompareTag("Stadium") && Vector3.Dot(transform.up, Vector3.down) > 0)
-		{
+		if (collision.gameObject.CompareTag ("Stadium") && Vector3.Dot (transform.up, Vector3.down) > 0) {
 			flipped = true;
-			Debug.Log("UpsideDown");
+			Debug.Log ("Flipped");
+		}
+		else 
+		{
+			flipped = false;
 		}
 	}
-	
+
 	public void FixedUpdate()
 	{
 		// Get player input
